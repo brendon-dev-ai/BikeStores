@@ -7,37 +7,31 @@ SELECT
   c.email,
   c.phone
 from Sales.customers c
-where not exists (
-  select 1 
-  from Sales.orders o
-  where o.customer_id = c.customer_id
-);
---===============================================================================
+LEFT JOIN Sales.orders o 
+ ON o.customer_id = c.customer_id
+ WHERE o.order_id  IS NULL;
+=================================================
   
   -- Q2 -- Listar os Produtos que não tenham sido comprados
 SELECT
   p.product_id
   p.product_name
 FROM Productions.products p
-WHERE NOT EXISTS (
-  SELECT 1
-  FROM Sales.order_items oi
-  WHERE oi.product_id = p.product_id
-);
+LEFT JOIN Sales.order_items oi 
+ ON oi.product_id = p.product_id
+ WHERE oi.product_id  IS NULL;
   --=============================================================================
 
   --Q3-- - Listar os Produtos sem Estoque;
 SELECT
   p.product_id
   p.product_name
-  p.brand_name,
-  SUM(s.quantity) AS TotalStock
+  COALESCE (SUM(s.quantity), 0) AS total_stock
 FROM Productions.products p
-JOIN Productions.stock s
-  on s.product_id = p.product_id 
+LEFT JOIN Productions.stocks s
+  ON s.product_id = p.product_id 
 GROUP BY p.product_id, p.product_name
-HAVING SUM(s.quantity) > 0
-ORDER BY Totalstock DESC;
+HAVING COALESCE (SUM(s.quantity), 0);
 
   --=============================================================================
 
@@ -50,12 +44,15 @@ SELECT
   b.brand_name,
   SUM(oi.quantity) AS TotalItemsSold
 FROM Sales.orders o
-JOIN Sales.order_items oi ON oi.order_id = o.order_id
-JOIN Productions.products p ON p.product_id = oi.product_is
-Join Productions.brands b ON b.brand_id = p.brand_id
-JOIN Sales.stores ON st.store_id = o.store_id
-WHERE b.brand_id = "guid"
-GROUP BY st.store_id, st.store_name, b.brand_name
+JOIN Sales.order_items oi 
+  ON oi.order_id = o.order_id
+JOIN Productions.products p 
+  ON p.product_id = oi.product_id
+Join Productions.brands b 
+  ON b.brand_id = p.brand_id
+JOIN Sales.stores st
+  ON st.store_id = o.store_id
+GROUP BY st.store_id, st.store_name, b.brand_id, b.brand_name
 ORDER BY st.store_name, TotalItemsSold DESC;
 
   --=============================================================================
@@ -66,13 +63,10 @@ SELECT
    sf.first_name,
    sf.last_name,
    sf.email,
-   sf.phone,
-   FROM Sales.staff sf
-  WHERE sf.active= 1 AND NOT EXISTS (
-    SELECT 1
-    FROM Sales.orders o
-    WHERE o.staff_id = sf.staff_id
-  );
+   sf.phone
+   FROM Sales.staffs sf
+    LEFT JOIN Sales.orders o
+  WHERE sf.active= 1 AND o.order_id IS NULL;
 
 --TODAS AS QUERIES ESTAO FUNCIONANDO;)
 --Listar todos Clientes que não tenham realizado uma compra;
