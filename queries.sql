@@ -22,8 +22,7 @@ WHERE oi.product_id IS NULL;
 -- Q3 - Listar os Produtos sem Estoque (somando todas as lojas)
 SELECT
   p.product_id,
-  p.product_name,
-  COALESCE(SUM(s.quantity), 0) AS total_stock
+  p.product_name
 FROM Production.products p
 LEFT JOIN Production.stocks s
   ON s.product_id = p.product_id
@@ -32,23 +31,19 @@ HAVING COALESCE(SUM(s.quantity), 0) = 0;
 
 -- Q4 - Agrupar a quantidade de vendas de uma determinada marca por loja
 -- "Quantidade de vendas" aqui = total de itens vendidos (SUM(quantity))
-SELECT
-  st.store_id,
-  st.store_name,
-  b.brand_id,
-  b.brand_name,
-  SUM(oi.quantity) AS total_items_sold
+SELECT 
+    st.store_id,
+    st.store_name,
+    COUNT(DISTINCT o.order_id) AS total_sales
 FROM Sales.orders o
-JOIN Sales.order_items oi
-  ON oi.order_id = o.order_id
-JOIN Production.products p
-  ON p.product_id = oi.product_id
-JOIN Production.brands b
-  ON b.brand_id = p.brand_id
-JOIN Sales.stores st
-  ON st.store_id = o.store_id
-GROUP BY st.store_id, st.store_name, b.brand_id, b.brand_name
-ORDER BY st.store_name, total_items_sold DESC;
+JOIN Sales.order_items oi  ON o.order_id = oi.order_id
+JOIN Production.products p ON oi.product_id = p.product_id
+JOIN Production.brands b   ON p.brand_id = b.brand_id
+JOIN Sales.stores st       ON st.store_id = o.store_id
+WHERE b.brand_id = 1
+GROUP BY st.store_id, st.store_name
+ORDER BY total_sales DESC;
+
 
 -- Q5 - Listar os Funcionarios que não estejam relacionados a um Pedido
 SELECT
